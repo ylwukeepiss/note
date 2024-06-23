@@ -193,9 +193,11 @@
 
 ### 参考资料
 #### <a href="https://zh.wikipedia.org/zh-hans/%E5%8C%97%E6%A1%A5">维基百科-北桥</a>
-#### <a href="https://www.akkadia.org/drepper/cpumemory.pdf">论文《Why Every Programer Should Know About Memory》</a>
-#### <a href="https://www.scss.tcd.ie/Jeremy.Jones/vivio/caches/MESI.htm">MESI协议趣味动画在线演示</a>
+#### <a href="https://research.cs.wisc.edu/multifacet/papers/micro06_ring.pdf">LLC-ring buffer design</a>
+#### <a href="https://www.akkadia.org/drepper/cpumemory.pdf">Why Every Programer Should Know About Memory</a>
 #### <a href="https://www.intel.cn/content/www/cn/zh/developer/articles/technical/intel-sdm.html">Intel开发人员手册-Vol 2A 3-614</a>
-#### <a href="https://juejin.cn/post/7031931006798004238">博客文章-MESI 一致性协议引发的一些思考</a>
-#### <a href="https://www.cnblogs.com/gujiangtaoFuture/articles/14336014.html">博客文章-缓存一致性与MESI协议Snoop操作</a>
+#### <a href="https://zhuanlan.zhihu.com/p/24146167">浅谈Lock与X86 Cache一致性</a>
+#### <a href="https://www.cnblogs.com/gujiangtaoFuture/articles/14336014.html">缓存一致性与MESI协议Snoop操作</a>
+#### <a href="https://juejin.cn/post/7031931006798004238">MESI 一致性协议引发的一些思考</a>
+#### <a href="https://www.scss.tcd.ie/Jeremy.Jones/vivio/caches/MESI.htm">MESI协议趣味动画在线演示</a>
 #### <a href="https://blog.chongsheng.art/post/golang/cpu-cache-memory-barrier/#false-sharing">博客文章-CPU缓存架构到内存屏障</a>
