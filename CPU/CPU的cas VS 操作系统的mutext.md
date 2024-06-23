@@ -1,0 +1,39 @@
+## CPU的cas操作 VS 操作系统的mutex锁
+### 前言
+#### 多线程运行过程中，访问共享区域，并确保数据一致且安全，可以有两种方式，一种是使用CPU的cas操作，一种是使用操作系统的mutex锁。
+<table>
+    <th>名称</th>
+    <th>模块</th>
+    <th>作用</th>
+    <th>说明</th>
+    <tr>
+        <td>CMPXCHG</td>
+        <td>原子操作指令</td>
+        <td>比较并交换，原子操作</td>
+        <td>x86架构中的汇编指令</td>
+    </tr>
+    <tr>
+        <td>LOCK</td>
+        <td>前缀指令</td>
+        <td>锁定与该指令相关的内存位置，确保对该内存位置操作的原子性</td>
+        <td>x86架构中的汇编指令</td>
+    </tr>
+    <tr>
+        <td>cas</td>
+        <td>CPU</td>
+        <td>原子操作</td>
+        <td>对CPU内缓存的数据进行原子操作，依赖LOCK指令和CMPXCHG指令</td>
+    </tr>
+    <tr>
+        <td>MESI</td>
+        <td>CPU</td>
+        <td>多核CPU缓存之间，数据一致性协议</td>
+        <td>CPU对寄存器内对数据进行操作后，先通过mesi协议通知其它CPU数据已更改，再写回主存</td>
+    </tr>
+    <tr>
+        <td>mutex</td>
+        <td>操作系统</td>
+        <td>临界区互斥操作</td>
+        <td>操作系统在用户态，使用mutex锁时，需要切换到内核态，借助</td>
+    </tr>
+</table>
