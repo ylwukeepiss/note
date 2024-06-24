@@ -190,7 +190,9 @@
 </table>
 
 ### 总结
-#### 在CPU的原子操作中，首先要保证原子操作的数据，在cache line上已对齐，跨缓存行会带来bus lock，CPU性能将直线下降，不管是CAS（MESIF协议实现缓存锁）还是内存屏障，最终都会转化为对cache line的操作，锁并没有消失，而是转嫁到ring bus的总线仲裁协议上去了，多核场景下，对同一地址的cache line进行CAS操作会引起反复的互相Invalidate，造成ping-pong效应，同样会降低性能，通常情况下，可以采用数据地址分离的模式，类似于thread-per-address。
+#### 在CPU的原子操作中，首先要保证原子操作的数据，在cache line上已对齐，跨缓存行会带来bus lock，CPU性能将直线下降；
+#### 不管是CAS（MESIF协议实现缓存锁）还是内存屏障，最终都会转化为对cache line的操作，锁并没有消失，而是转嫁到ring bus的总线仲裁协议上去，胜者完成操作，败者需要接收失败，invalidate自身缓存的值，重新读取，然后继续操作；
+#### 多核场景下，对同一地址的cache line进行CAS操作会引起反复的互相Invalidate，造成ping-pong效应，同样会降低性能，通常情况下，可以采用数据地址分离的模式，类似于thread-per-address。
 
 
 
