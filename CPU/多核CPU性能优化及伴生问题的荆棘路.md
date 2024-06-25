@@ -182,12 +182,134 @@
 
 ![](../resource/CPU/CPU优化之InvalidateQueues.png)
 
+#### StoreBuffer未及时将执行结果同步到缓存行，或者InvalidateQueue未及时执行，都有可能会带来可见性问题；
+#### 下文代码段中，如果变量a在CPU1的缓存行里，而变量b在CPU0的缓存行里，断言有可能为false；
+```
+    int a = 0, b = 0;
+    executeToCPU0() {
+        a = 1;
+        b = 1;
+    }
+    
+    executeToCPU1() {
+        while (b == 1) {
+            assert(a == 1);
+        }
+    }
+```
+
+
 ### 通过内存屏障解决内存系统重排序问题
-### 背景
-#### CPU为了提高性能，使用了指令重排，进而在少数场景下导致了可见性问题，因此，让应用层的开发者，决定什么时候不产生内存重排序，便可以解决问题（牺牲了少部分）。
+#### CPU为了提高性能，使用了指令重排，进而在少数场景下导致了可见性问题，因此，让应用层的开发者，决定什么时候不产生内存重排序，便可以解决问题（牺牲少部分指令重排的性能，换取准确性）。
+#### 下面是相关内存屏障介绍
 <table>
-    <th></th>
+    <th>名称</th>
+    <th>模块</th>
+    <th>简介</th>
+    <th>说明</th>
+    <tr>
+        <td>lfence</td>
+        <td>x86指令集</td>
+        <td>读屏障指令</td>
+        <td>将Invalidate Queues中的指令立即处理，并且强制CPU读取缓存行，执行lfence指令之后的读操作不会被重排需到执行lfence指令之前，这也意味着其它CPU暴露出来读缓存行状态对当前CPU可见。</td>
+    </tr>
+    <tr>
+        <td>sfence</td>
+        <td>x86指令集</td>
+        <td>写屏障指令</td>
+        <td>将Store Buffers中的修改数据刷新到本地缓存中，使得其他CPU能够看到这些修改，而且在执行sfence指令之后的操作不会被重排需到sfence指令之前，这意味着执行sfence指令之前的写操作一定要全局可见。</td>
+    </tr>
+    <tr>
+        <td>mfence</td>
+        <td>x86指令集</td>
+        <td>读写屏障指令</td>
+        <td>相当于lfence和sfence指令到混合体，保证mfence指令执行前后的读写操作的顺序，同时要求执行mfence指令之后的写操作的结果全局可见，执行mfence指令之前的写操作结果全局可见。</td>
+    </tr>
+    <tr>
+        <td>smp_rmb()</td>
+        <td>Linux系统</td>
+        <td>读屏障指令</td>
+        <td>基于lfence指令进行封装</td>
+    </tr>
+    <tr>
+        <td>smp_wmb()</td>
+        <td>Linux系统</td>
+        <td>写屏障指令</td>
+        <td>基于sfence进行封装</td>
+    </tr>
+    <tr>
+        <td>smp_mb()</td>
+        <td>Linux系统</td>
+        <td>全屏障指令</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>loadload()</td>
+        <td>JVM</td>
+        <td>Load1:LoadLoad:Load2</td>
+        <td>确保Load1指令的加载，在Load2指令之前，简单地说，Load1指令和Load2指令不允许重排</td>
+    </tr>
+        <td>storestore()</td>
+        <td>JVM</td>
+        <td>Store1:StoreStore:Store2</td>
+        <td>确保执行Store2指令之前，Store1的指令对其它处理器可见，也就是说把Store1的数据刷新到内存中</td>
+    </tr>
+    <tr>
+        <td>loadstore()</td>
+        <td>JVM</td>
+        <td>Load1:LoadLoad:Store2</td>
+        <td>确保执行Store2及后续存储指令被刷新之前，Load1的数据先被加载</td>
+    </tr>
+        <td>storeload()</td>
+        <td>JVM</td>
+        <td>Store1:StoreLoad:Load2</td>
+        <td>确保执行Load2访问数据和加载后续所有Load指令之前，Store1的数据对其它处理器可见，即Store1的数据已刷回内存</td>
+    </tr>
 </table>
+
+#### 利用Linux系统提供的内存屏障指令，解决CPU间指令重排序导致的进程脏读问题：
+```
+    int a = 0, b = 0;
+    executeToCPU0() {
+        a = 1;
+        smp_wmb();
+        b = 1;
+    }
+    
+    executeToCPU1() {
+        while (b == 1) {
+            smp_rmb();
+            assert(a == 1);
+        }
+    }
+```
+
+#### CPU0执行到smp_wmb()时，会将store buffers中的数据刷到缓存行，并强制要求CPU读取缓存行，这就保证了该缓存行对其他CPU可见；
+#### CPU1执行到smp_rmb()时，会将invalidate queues中的指令先执行完，这就保证了变量a能读取到最新的值；
+
+### 重排序类型
+<table>
+    <th>名称</th>
+    <th>模块</th>
+    <th>说明</th>
+    <tr>
+        <td>CPU流水指令</td>
+        <td>CPU</td>
+        <td>CPU引入并行流水指令处理，内部有多个部件，可以执行多条指令</td>
+    </tr>
+    <tr>
+        <td>CPU内存重排</td>
+        <td>CPU</td>
+        <td>CPU为了解决缓存一致性导致的阻塞问题，引入了Store Buffers，Invalidate Queues等缓存结构，</td>
+    </tr>
+    <tr>
+        <td>编译器重排</td>
+        <td>编译器</td>
+        <td>编译器在不改变单线程程序语义的前提下，可以重新安排语句的执行顺序</td>
+    </tr>
+</table>
+
+#### 由上可知，多线程环境下，共享变量的读写安全，需要先抑制编译器级别的重排需，再抑制CPU层面的重排序； 
 
 ### 总结
 #### 在CPU的原子操作中，首先要保证原子操作的数据，在cache line上已对齐，跨缓存行会带来bus lock，CPU性能将直线下降；
@@ -206,3 +328,4 @@
 #### <a href="https://juejin.cn/post/7031931006798004238">MESI 一致性协议引发的一些思考</a>
 #### <a href="https://www.scss.tcd.ie/Jeremy.Jones/vivio/caches/MESI.htm">MESI协议趣味动画在线演示</a>
 #### <a href="https://blog.chongsheng.art/post/golang/cpu-cache-memory-barrier/#false-sharing">博客文章-CPU缓存架构到内存屏障</a>
+#### 《Java并发编程深度解析与实战》——谭峰
