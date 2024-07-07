@@ -25,4 +25,8 @@
     </tr>
 </table>
 
-#### 自从JDK8之后，static关键字修饰的成员，均放在JMM中的Heap中；
+#### 自从JDK8之后，static关键字修饰的成员，均放在JMM中的Heap中，JDK7及其之前的版本，是放在方法区，JDK8之后方法区改名为元空间，并将常量池移到堆中，估计是考虑到常量池也是需要经常回收，因而放在Heap中，而meta space存放一些基本不回收的信息；
+
+### 参考资料
+
+<a href="https://openjdk.org/jeps/122">jdk8官方文档</a>
