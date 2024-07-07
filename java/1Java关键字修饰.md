@@ -25,7 +25,7 @@
     </tr>
 </table>
 
-#### 自从JDK8之后，static关键字修饰的成员变量，放在JMM中的Heap中，static修饰的成员方法，放在方法区中；
+#### 自从JDK8之后，static关键字修饰的成员变量，放在JMM中的Heap中，static修饰的成员方法，放在MetaSpace中（方法区在JDK8中的实现）；
 
 ### 参考资料
 
