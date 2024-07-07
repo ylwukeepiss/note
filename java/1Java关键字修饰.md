@@ -25,4 +25,4 @@
     </tr>
 </table>
 
-#### 自从JDK8之后，static关键字修饰的成员，均放在JMM中的方法区；
+#### 自从JDK8之后，static关键字修饰的成员，均放在JMM中的Heap中；
