@@ -81,6 +81,7 @@
     acknowledge_interrupt();
     return_from_interrupt();
 ```
+#### 中断驱动IO的缺点：中断发生在每一个字符上；
 
 ### 使用DMA的IO
 
