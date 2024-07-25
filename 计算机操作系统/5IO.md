@@ -45,6 +45,45 @@
 
 #### 独占设备or共享设备：磁带机，无法同时让多人使用，多个用户同时在同一磁盘上打开文件不会引起什么问题，操作系统必须能够处理独占设备和共享设备以避免问题发生；
 
+### 程序控制IO
+![](../resource/操作系统/程序控制IO.png)
+
+```
+    copy_from_user(buffer, p, count);           /*p是内核缓冲区，从用户缓冲区buffer中拷贝指定count个字符到p缓冲区*/
+    for (int i = 0; i < count; ++i) {           /*循环遍历p缓冲区*/
+        while(*printer_status_reg != READY);    /*循环直至目标设备处于准备就绪状态*/
+        *printer_data_register = p[i];          /*输出一个字符*/
+    }
+    return_to_user();                           /*切换到用户态*/
+```
+
+#### 程序控制IO的缺点：直至全部IO完成之前，CPU处于阻塞状态；
+
+### 中断驱动IO
+#### 打印机🖨️例子中，假设打印机每10ms能打印一个字符，这意味着，当每个字符被写到打印机的寄存器之后，CPU将有10ms搁置在无价值的循环中，等待允许输出下一个字符，如果允许CPU在等待打印机变为就绪状态的这段时间内做其它的事情就是使用中断；
+#### a）当打印系统被调用时执行的代码：
+```
+    copy_from_user(buffer, p, count);
+    enable_interrups();
+    while (*printer_status_register != READY);
+    *printer_data_register[i] = p[0];
+    scheduler();
+```
+#### b）CPU响应中断部分：
+```
+    if (count == 0) {
+        unblock_user();
+    } else {
+        *printer_data_register[i] = p[i];
+        count -= 1;
+        i += 1;
+    }
+    acknowledge_interrupt();
+    return_from_interrupt();
+```
+
+### 使用DMA的IO
+
 ## I/O的软件分层
 ## 盘
 ## 时钟
