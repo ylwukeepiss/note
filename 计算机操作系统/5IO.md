@@ -84,6 +84,19 @@
 #### 中断驱动IO的缺点：中断发生在每一个字符上；
 
 ### 使用DMA的IO
+#### 本质上，DMA是基于程序控制IO，由DMA控制器完成字符搬运工作而不是CPU，只是这一策略需要特殊的DMA硬件，将中断次数从打印每一个字符一次，减少到打印每个缓冲区一次；
+#### a）当打印系统被调用执行的代码：
+```
+   copy_from_user(buffer, p, count);
+   set_up_DMA_controller();
+   scheduler(); 
+```
+#### b）中断服务过程：
+```
+    acknowledge_interrupt();
+    unblock_user();
+    return_from_interrupt();
+```
 
 ## I/O的软件分层
 ## 盘
