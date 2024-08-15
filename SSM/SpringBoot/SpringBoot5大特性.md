@@ -5,3 +5,6 @@
 ### 外部化配置
 ### Spring boot Actuator
 ### 嵌入式web容器
+
+## 注解篇
+#### @SpringBootApplicaton = @EnableAutoConfiguration + @Configuration + @ComponentScan
