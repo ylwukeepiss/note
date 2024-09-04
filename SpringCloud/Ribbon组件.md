@@ -4,7 +4,8 @@
 
 ![](../resource/SpringCloud/Ribbon组件架构图.png)
 
-![](../resource/SpringCloud/Ribbon组件UML.png)
+
+![](../resource/SpringCloud/Ribbon组件UML图.png)
 
 
 
