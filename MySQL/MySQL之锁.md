@@ -152,12 +152,43 @@
 > 3. InnoDB中的排他锁和共享锁，都是表锁；
 > 4. 意向锁是有自己的数据引擎维护的，用户无需手动设置意向锁，在为行数据加共享锁或者排他锁之前，InnoDB会先获取该数据行所在的表的对应意向锁；
 > 
-### 由此衍生的锁的算法有3种
-### record lock:单个行记录上的锁。
-### gap lock:范围锁，锁定一个范围但不包含记录本身。
-### next-key lock: record lock + gap lock，不仅锁住一个范围，也包含范围的记录本身。
-### innodb中事务隔离性中的repeatable read 便是由next-key lock 算法实现，从而避免幻读造成的行数前后不一致问题 和 不可重复读中的行内容前后不一致问题。
-### innodb存储引擎下的事务遵循acid规范，其中的isolation 隔离性，具备4种级别：read-uncommitted(读未提交) read-committed(读已提交）repeatable read（可重复读）serializable（序列化）,资源耗费从左到右依次增加；
+### 通过锁，可以实现事务隔离性的要求，由此衍生的锁的算法有3种：
+> 1. record lock单个行记录上的锁。
+> 2. gap lock:范围锁，锁定一个范围但不包含记录本身。
+> 3. next-key lock: record lock + gap lock，不仅锁住一个范围，也包含范围的记录本身。
+
+#### 当查询的索引含有唯一属性时，InnoDB存储引擎会对next-key lock算法进行优化，将其降级为record lock，即仅仅锁住索引本身，而不是范围：
+```
+    drop table if exists t;
+    create table t (a int primary key);
+    insert into t select 1;
+    insert into t select 2;
+    insert into t select 5;
+```
+![](../resource/MySQL/MySQL锁降级.png)
+#### 事务A中，先对记录5加上X锁，由于a是主键且唯一，算法锁住的是[5],而不是（2,5），因而事务B中插入记录4，不会被阻塞。即算法由next-key lock 降级为 record lock，从而提高了应用的并发性；
+
+#### 当查询的索引是辅助索引时
+```
+    drop table if exists z;
+    create table z (a int, b int, primary key(a), key(b));
+    insert into z select 1, 1;
+    insert into z select 3, 1;
+    insert into z select 5, 3;
+    insert into z select 7, 6;
+    insert into z select 10, 8; 
+```
+
+![](../resource/MySQL/MySQL辅助索引next-key-lock.png)
+
+#### 如上图，当会话A中，锁住的该行记录中，对应的主键索引是a = 5，辅助索引是b = 3，因此也用record-lock先将主键a=5锁住，其次，针对辅助索引，使用gap-lock算法，不仅锁住(1,3) 还锁住(3,6)；
+#### 因此会话B中的所有SQL操作将被阻塞，直至会话A提交；
+#### 总之，gap-lock算法，目的是阻止多个事务将记录插入到同一个范围内，避免了幻读产生；
+#### 如果不想使用gap-lock，可将数据库的事务隔离级别设置为RC，仅在外键约束和唯一性约束需要使用gap-lock，优点是提高了并发能力；
+#### 缺点是：破坏了事务的隔离性。
+
+#### innodb中事务隔离性中的repeatable read 便是由next-key lock 算法实现，从而避免幻读造成的行数前后不一致问题 和 不可重复读中的行内容前后不一致问题。
+#### innodb存储引擎下的事务遵循acid规范，其中的isolation 隔离性，具备4种级别：read-uncommitted(读未提交) read-committed(读已提交）repeatable read（可重复读）serializable（序列化）,资源耗费从左到右依次增加；
 ### |---隔离级别-----------------|--脏读--|--不可重复读--|--幻读--|--加锁读
 ### |---read-uncommitted---|-yes----|-yes-------------|--yes--|--no---
 ### |---read-committed-------|-no-----|-yes-------------|--yes--|--no--
