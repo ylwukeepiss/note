@@ -187,13 +187,70 @@
 #### 如果不想使用gap-lock，可将数据库的事务隔离级别设置为RC，仅在外键约束和唯一性约束需要使用gap-lock，优点是提高了并发能力；
 #### 缺点是：破坏了事务的隔离性。
 
-#### innodb中事务隔离性中的repeatable read 便是由next-key lock 算法实现，从而避免幻读造成的行数前后不一致问题 和 不可重复读中的行内容前后不一致问题。
+### MySQL之读现象
+<table>
+    <th>读问题</th>
+    <th>名词解释</th>
+    <th>时序图解</th>
+    <th>解决方式</th>
+    <tr>
+        <td>脏读</td>
+        <td>在数据库访问中，【事务A】将某一个值修改，【事务B】读取到了该值，然而【事务B】因某些原因撤销了对该值的修改，这导致【事务A】读取到了无效的值。</td>
+        <td> <img src="../resource/MySQL/MySQL脏读.png"></td>
+        <td>将事务隔离级别提高为【读已提交】</td>
+    </tr>
+    <tr>
+        <td>不可重复读</td>
+        <td>在数据库的访问中，一个事务范围内，两次查询，返回不同的数据，这是由于其它事务发起提交引起的。</td>
+        <td> <img src="../resource/MySQL/MySQL不可重复读.png"></td>
+        <td>将事务隔离级别提高为【可重复读】</td>
+    </tr>
+    <tr>
+        <td>幻读</td>
+        <td>不可重复读的一种特殊场景，【事务A】执行了一条sql，查询某个范围内的数据，【事务B】在这个范围内插入了一条数据，【事务A】再次执行sql，发现多了一条。</td>
+        <td> <img src="../resource/MySQL/MySQL幻读.png"></td>
+        <td>将事务隔离级别提高为【序列化】</td>
+    </tr>
+</table>
+
 #### innodb存储引擎下的事务遵循acid规范，其中的isolation 隔离性，具备4种级别：read-uncommitted(读未提交) read-committed(读已提交）repeatable read（可重复读）serializable（序列化）,资源耗费从左到右依次增加；
-### |---隔离级别-----------------|--脏读--|--不可重复读--|--幻读--|--加锁读
-### |---read-uncommitted---|-yes----|-yes-------------|--yes--|--no---
-### |---read-committed-------|-no-----|-yes-------------|--yes--|--no--
-### |---repeatable-read-------|-no-----|-no---------------|--yes--|--no
-### |---serializable-------------|-no-----|-no---------------|--no---|-- yes
+
+<table>
+    <th>隔离级别</th>
+    <th>脏读</th>
+    <th>不可重复读</th>
+    <th>幻读</th>
+    <th>加锁读</th>
+    <tr>
+        <td>read-uncommitted</td>
+        <td>yes</td>
+        <td>yes</td>
+        <td>yes</td>
+        <td>no</td>
+    </tr>
+    <tr>
+        <td>read-committed</td>
+        <td>no</td>
+        <td>yes</td>
+        <td>yes</td>
+        <td>no</td>
+    </tr>
+    <tr>
+        <td>repeatable-read</td>
+        <td>no</td>
+        <td>yes</td>
+        <td>yes</td>
+        <td>no</td>
+    </tr>
+    <tr>
+        <td>serializable</td>
+        <td>no</td>
+        <td>no</td>
+        <td>no</td>
+        <td>yes</td>
+    </tr>
+</table>
+
 ### 开2个会话，打开2个事务，模拟并发情况下
 ### 脏读：在事务b中插入一行数据但未提交，在事务a中能读取到改行数据。
 ### 不可重复读：在事务b中修改一行数据并提交，在事务a中能读取到修改后的行数据，重点在于修改。某种程度上来说，这是被允许的。（在innodb中，通过使用Next-Key Lock 算法来避免不可重复读读问题。比如对于select * from t where a <= 5, 在隔离级别为repeatable-read 下，不仅锁住了扫描到的索引，还锁住了这些索引覆盖的范围。）
