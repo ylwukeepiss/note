@@ -7,7 +7,7 @@
     <tr>
         <td>原子性</td>
         <td>对数据库的修改，要么都修改，要么都不做。</td>
-        <td>redo log</td>
+        <td>undo log</td>
     </tr>
     <tr>
         <td>一致性</td>
