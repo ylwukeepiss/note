@@ -3,16 +3,16 @@
 #### mysql执行计划有如下10列：
 
 <table> 
-    <th>id</th>
+    <th>type</th>
     <th>select_type</th>
     <th>table</th>
-    <th>type</th>
     <th>possible_key</th>
     <th>key</th>
     <th>key_len</th>
     <th>ref</th>
     <th>rows</th>
     <th>Extra</th>
+    <th>id</th>
 </table>
 
 ### type：访问类型；
