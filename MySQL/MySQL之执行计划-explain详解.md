@@ -73,7 +73,194 @@
 #### system > const > eq_ref > ref > fulltext > ref_or_null > index_image > unique_subquery > index_subquery > range > index > ALL
 #### 其中需要记住的是：system > const > eq_ref > ref > range > index > ALL
 #### 一般来说，好的sql查询至少要达到range级别，最好能达到ref；
+<table>
+    <th>type值</th>
+    <th>描述</th>
+    <tr>
+        <td>system</td>
+        <td>系统表，少量数据，往往不需要磁盘IO</td>
+    </tr>
+    <tr>
+        <td>const</td>
+        <td>常量连接</td>
+    </tr>
+    <tr>
+        <td>eq_ref</td>
+        <td>主键索引(primary key)，或者非空唯一索引(unique or null)等值扫描</td>
+    </tr>
+    <tr>
+        <td>ref</td>
+        <td>非主键非唯一索引等值扫描</td>
+    </tr>
+    <tr>
+        <td>range</td>
+        <td>范围扫描</td>
+    </tr>
+    <tr>
+        <td>ALL</td>
+        <td>全表扫描</td>
+    </tr>
+</table>
 
+```
+1. system
+MariaDB [mysql]> explain select * from mysql.procs_priv;
++------+-------------+------------+--------+---------------+------+---------+------+------+---------------------+
+| id   | select_type | table      | type   | possible_keys | key  | key_len | ref  | rows | Extra               |
++------+-------------+------------+--------+---------------+------+---------+------+------+---------------------+
+|    1 | SIMPLE      | procs_priv | system | NULL          | NULL | NULL    | NULL | 0    | Const row not found |
++------+-------------+------------+--------+---------------+------+---------+------+------+---------------------+
+
+场景：系统表；
+
+2. const
+造数据：
+    create table user (
+      id int primary key,
+      name varchar(20)
+    )engine=innodb;
+    
+    insert into user values(1,'ar414');
+    insert into user values(2,'zhangsan');
+    insert into user values(3,'lisi');
+    insert into user values(4,'wangwu');
+
+MariaDB [mole]> explain select * from user where id = 1;
++------+-------------+-------+-------+---------------+---------+---------+-------+------+-------+
+| id   | select_type | table | type  | possible_keys | key     | key_len | ref   | rows | Extra |
++------+-------------+-------+-------+---------------+---------+---------+-------+------+-------+
+|    1 | SIMPLE      | user  | const | PRIMARY       | PRIMARY | 4       | const | 1    |       |
++------+-------------+-------+-------+---------------+---------+---------+-------+------+-------+
+
+场景：
+   a. 命中主键索引或者唯一索引;
+   b. 被连接的部分是一个常量值；
+
+3. eq_ref
+造数据：
+    create table user (
+      id int primary key,
+      name varchar(20)
+    )engine=innodb;
+    
+    insert into user values(1,'ar414');
+    insert into user values(2,'zhangsan');
+    insert into user values(3,'lisi');
+    insert into user values(4,'wangwu');
+    
+    create table user_balance (
+      uid int primary key,
+      balance int
+    )engine=innodb;
+    
+    insert into user_balance values(1,100);
+    insert into user_balance values(2,200);
+    insert into user_balance values(3,300);
+    insert into user_balance values(4,400);
+    insert into user_balance values(5,500);
+
+
+MariaDB [mole]> explain select * from user left join user_balance on user.id = user_balance.uid where user.id = user_balance.uid;
++------+-------------+--------------+--------+---------------+---------+---------+--------------+------+-------+
+| id   | select_type | table        | type   | possible_keys | key     | key_len | ref          | rows | Extra |
++------+-------------+--------------+--------+---------------+---------+---------+--------------+------+-------+
+|    1 | SIMPLE      | user         | ALL    | PRIMARY       | NULL    | NULL    | NULL         | 4    |       |
+|    1 | SIMPLE      | user_balance | eq_ref | PRIMARY       | PRIMARY | 4       | mole.user.id | 1    |       |
++------+-------------+--------------+--------+---------------+---------+---------+--------------+------+-------+
+上例中，对于前user表中的每一行，对应后user_balance表只有一行被扫描，这类扫描速度非常快；
+场景：
+    a. 联表查询；
+    b. 命中主键或者非空唯一索引；
+    c. 等值连接；
+    
+4. ref 
+同eq_ref模拟数据区别：user_balance表中的主键索引改为普通索引;
+造数据：
+    create table user (
+      id int primary key,
+      name varchar(20)
+    )engine=innodb;
+    
+    insert into user values(1,'ar414');
+    insert into user values(2,'zhangsan');
+    insert into user values(3,'lisi');
+    insert into user values(4,'wangwu');
+    
+    create table user_balance (
+      uid int,
+      balance int,
+      index(uid)
+    )engine=innodb;
+    
+    insert into user_balance values(1,100);
+    insert into user_balance values(2,200);
+    insert into user_balance values(3,300);
+    insert into user_balance values(4,400);
+    insert into user_balance values(5,500);
+
+MariaDB [mole]> explain select * from user_balance where uid = 5;
++------+-------------+--------------+------+---------------+------+---------+-------+------+-------+
+| id   | select_type | table        | type | possible_keys | key  | key_len | ref   | rows | Extra |
++------+-------------+--------------+------+---------------+------+---------+-------+------+-------+
+|    1 | SIMPLE      | user_balance | ref  | uid           | uid  | 5       | const | 1    |       |
++------+-------------+--------------+------+---------------+------+---------+-------+------+-------+
+上述例子中，uid是非唯一索引索引，每一次匹配有可能返回多个行，比eq_ref慢；
+
+5. range
+造数据：
+    create table user (
+      id int primary key,
+      name varchar(20)
+    )engine=innodb;
+    
+    insert into user values(1,'ar414');
+    insert into user values(2,'zhangsan');
+    insert into user values(3,'lisi');
+    insert into user values(4,'wangwu');
+    insert into user values(5,'zhaoliu');
+
+MariaDB [mole]> explain select * from user where id > 5;
++------+-------------+-------+-------+---------------+---------+---------+------+------+-------------+
+| id   | select_type | table | type  | possible_keys | key     | key_len | ref  | rows | Extra       |
++------+-------------+-------+-------+---------------+---------+---------+------+------+-------------+
+|    1 | SIMPLE      | user  | range | PRIMARY       | PRIMARY | 4       | NULL | 1    | Using where |
++------+-------------+-------+-------+---------------+---------+---------+------+------+-------------+
+
+场景：比较好理解，在索引上进行范围查询；
+
+6. index
+MariaDB [mole]> explain select count(1) from user;
++------+-------------+-------+-------+---------------+---------+---------+------+------+-------------+
+| id   | select_type | table | type  | possible_keys | key     | key_len | ref  | rows | Extra       |
++------+-------------+-------+-------+---------------+---------+---------+------+------+-------------+
+|    1 | SIMPLE      | user  | index | NULL          | PRIMARY | 4       | NULL | 4    | Using index |
++------+-------------+-------+-------+---------------+---------+---------+------+------+-------------+
+
+场景：index类型，需要扫描索引上的全部数据，仅比全表扫描快一点；
+
+7. ALL
+造数据：
+    create table user (
+      id int,
+      name varchar(20)
+    )engine=innodb;
+    
+    insert into user values(1,'ar414');
+    insert into user values(2,'zhangsan');
+    insert into user values(3,'lisi');
+    insert into user values(4,'wangwu');
+    insert into user values(5,'zhaoliu');
+
+MariaDB [mole]> explain select * from user where id = 1;
++------+-------------+-------+------+---------------+------+---------+------+------+-------------+
+| id   | select_type | table | type | possible_keys | key  | key_len | ref  | rows | Extra       |
++------+-------------+-------+------+---------------+------+---------+------+------+-------------+
+|    1 | SIMPLE      | user  | ALL  | NULL          | NULL | NULL    | NULL | 4    | Using where |
++------+-------------+-------+------+---------------+------+---------+------+------+-------------+
+
+场景：不走索引，则全表扫描；
+
+```
 
 
 ### possible_key：查询涉及到的字段上存在索引，则该索引将被取出，但不一定被查询实际使用；
@@ -129,5 +316,6 @@
 #### <a href="https://blog.csdn.net/wuseyukui/article/details/71512793">MySQL高级 之 explain执行计划详解</a>
 #### <a href="https://www.51cto.com/article/767432.html">MySQL执行计划Explain详解</a>
 #### <a href="https://blog.csdn.net/Bronze5/article/details/113817719">MySQL执行计划之Using filesort</a>
+#### <a href="https://juejin.cn/post/6844904149864169486">Mysql Explain之type详解</a>
 
 
