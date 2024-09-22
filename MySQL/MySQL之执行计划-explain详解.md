@@ -23,10 +23,16 @@
 #### id不同：如果是子查询，id的序号会递增，id值越大优先级越高，越先被执行；
 ![](../resource/MySQL/MySQL-Explain详解-不同id.png)
 
-#### id既有相同又有不同：常见于from后面带派生表，id值越大越先执行，相同的id，则从上到下执行（mysql新版本估计是对派生表做了优化，没有实验模拟出来，不纠结）；
-
+#### id既有相同又有不同：常见于from后面带派生表，id值越大越先执行，相同的id，则从上到下执行；
+![](../resource/MySQL/MySQL-Explain详解-相同&不同id.png)
 
 ### select_type：查询的类型，主要用于区分普通查询、联合查询、子查询等复杂的查询；
+#### SIMPLE：简单的select查询，查询中不包含子查询或者union；
+#### PRIMARY：查询中包含复杂的子查询部分，最外层查询被标记为PRIMARY；
+#### SUBQUERY：在select或者where列表中包含了子查询；
+#### DERIVED：在from列表中包含子查询被标记为derived（派生表）；
+#### UNION：
+#### UNION RESULT：
 
 
 ### 参考资料💾
