@@ -83,11 +83,51 @@
 >
 
 ### key_len：表示索引使用的字节数；
-#### 最大可能长度，并非实际长度（即该长度是通过表定义计算得到的，不是通过表内检索出的），在不损失精度的情况下，该值理论上越短越好，
+#### 最大可能长度，并非实际长度（即该长度是通过表定义计算得到的，不是通过表内检索出的），在不损失精度的情况下，该值理论上越短越好；
+
+### ref：显示索引的哪一列被用到了，如果可能，是一个常量const（即explain中，key列记录的索引中查找值所用的列或常量）；
+
+### rows：sql查询所需读取的行数预估值（通过把所有的rows列值相乘，可粗略估算整个查询会检查的行数）；
+
+### Extra：不适合在其它字段中显示，但十分重要的额外信息；
+<table>
+    <th>值</th>
+    <th>描述</th>
+    <tr>
+        <td>Using filesort</td>
+        <td>MySQL无法利用索引完成的排序操作称为‘文件排序’，说明MySQL会对数据使用一个外部的索引排序，而不是按照表内的索引顺序进行读取。</td>
+    </tr>
+    <tr>
+        <td>Using Temporary</td>
+        <td>使用了临时表保存中间结果，MySQL在对查询结果排序时使用临时表，常见于排序order by 和 分组查询group by。</td>
+    </tr>
+    <tr>
+        <td>Using index</td>
+        <td>使用了覆盖索引。</td>
+    </tr>
+    <tr>
+        <td>Using index condition</td>
+        <td>查询使用了覆盖索引，且索引为常量</td>
+    </tr>
+    <tr>
+        <td>Using where</td>
+        <td>使用了where过滤。</td>
+    </tr>
+    <tr>
+        <td>Using join buffer</td>
+        <td>使用了链接缓存。</td>
+    </tr>
+    <tr>
+        <td>Impossible WHERE</td>
+        <td>where子语句的返回值总是为false，不能用来获取任何元组。</td>
+    </tr>
+</table>
 
 
 
 ### 参考资料💾
 #### <a href="https://blog.csdn.net/wuseyukui/article/details/71512793">MySQL高级 之 explain执行计划详解</a>
 #### <a href="https://www.51cto.com/article/767432.html">MySQL执行计划Explain详解</a>
+#### <a href="https://blog.csdn.net/Bronze5/article/details/113817719">MySQL执行计划之Using filesort</a>
+
 
