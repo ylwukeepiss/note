@@ -16,12 +16,18 @@
 </table>
 
 #### 其中最重要的列为：id、type、key、rows、Extra
-### id
+### id：查询的序列号，表示操作表的顺序；
 #### id相同：执行顺序由上到下；
 ![](../resource/MySQL/MySQL-Explain详解-相同id.png)
 
 #### id不同：如果是子查询，id的序号会递增，id值越大优先级越高，越先被执行；
 ![](../resource/MySQL/MySQL-Explain详解-不同id.png)
+
+#### id既有相同又有不同：常见于from后面带派生表，id值越大越先执行，相同的id，则从上到下执行（mysql新版本估计是对派生表做了优化，没有实验模拟出来，不纠结）；
+
+
+### select_type：查询的类型，主要用于区分普通查询、联合查询、子查询等复杂的查询；
+
 
 ### 参考资料💾
 #### <a href="https://blog.csdn.net/wuseyukui/article/details/71512793">MySQL高级 之 explain执行计划详解</a>
