@@ -209,6 +209,47 @@ MariaDB [mole]> explain select * from user where id = 1;
 
 ```
 
+### select_type：查询的类型，主要用于区分普通查询、联合查询、子查询等复杂的查询；
+<table>
+    <th>类型</th>
+    <th>描述</th>
+    <tr>
+        <td>SIMPLE</td>
+        <td>简单的select查询（查询中不使用子查询或者union）；</td>
+    </tr>
+    <tr>
+        <td>PRIMARY</td>
+        <td>查询中包含复杂的子查询，最外层查询被标记为PRIMARY；</td>
+    </tr>
+    <tr>
+        <td>SUBQUERY</td>
+        <td>在select或者where列表中包含了子查询；</td>
+    </tr>
+    <tr>
+        <td>DERIVED</td>
+        <td>派生表，子查询在from列表中；</td>
+    </tr>
+    <tr>
+        <td>UNION</td>
+        <td>若第二个select出现在UNION后，则标记为UNION；若UNION包含在from子句的子查询中，外层select将被标记为derived；</td>
+    </tr>
+    <tr>
+        <td>UNION RESULT</td>
+        <td>从union表中获取结果的select，即将每个union结果集合并到一起；</td>
+    </tr>
+    <tr>
+        <td>DEPENDENT SUBQUERY</td>
+        <td>子查询中，第一个select查询；</td>
+    </tr>
+    <tr>
+        <td>DEPENDENT UNION</td>
+        <td>子查询中的UNION操作中，从UNION第二个及之后的所有select语句，select type 都为 DEPENDENT UNION；</td>
+    </tr>
+</table>
+
+![](../resource/MySQL/MySQL-Explain详解-union查询相关.png)
+
+![](../resource/MySQL/MySQL-Explain详解-dependent-union&&subquery.png)
 
 ### possible_key：查询涉及到的字段上存在索引，则该索引将被取出，但不一定被查询实际使用；
 
@@ -267,48 +308,6 @@ MariaDB [mole]> explain select * from user where id = 1;
 
 #### id既有相同又有不同：常见于from后面带派生表，id值越大越先执行，相同的id，则从上到下执行；
 ![](../resource/MySQL/MySQL-Explain详解-相同&不同id.png)
-
-### select_type：查询的类型，主要用于区分普通查询、联合查询、子查询等复杂的查询；
-<table>
-    <th>类型</th>
-    <th>描述</th>
-    <tr>
-        <td>SIMPLE</td>
-        <td>简单的select查询（查询中不使用子查询或者union）；</td>
-    </tr>
-    <tr>
-        <td>PRIMARY</td>
-        <td>查询中包含复杂的子查询，最外层查询被标记为PRIMARY；</td>
-    </tr>
-    <tr>
-        <td>SUBQUERY</td>
-        <td>在select或者where列表中包含了子查询；</td>
-    </tr>
-    <tr>
-        <td>DERIVED</td>
-        <td>派生表，子查询在from列表中；</td>
-    </tr>
-    <tr>
-        <td>UNION</td>
-        <td>若第二个select出现在UNION后，则标记为UNION；若UNION包含在from子句的子查询中，外层select将被标记为derived；</td>
-    </tr>
-    <tr>
-        <td>UNION RESULT</td>
-        <td>从union表中获取结果的select，即将每个union结果集合并到一起；</td>
-    </tr>
-    <tr>
-        <td>DEPENDENT SUBQUERY</td>
-        <td>子查询中，第一个select查询；</td>
-    </tr>
-    <tr>
-        <td>DEPENDENT UNION</td>
-        <td>子查询中的UNION操作中，从UNION第二个及之后的所有select语句，select type 都为 DEPENDENT UNION；</td>
-    </tr>
-</table>
-
-![](../resource/MySQL/MySQL-Explain详解-union查询相关.png)
-
-![](../resource/MySQL/MySQL-Explain详解-dependent-union&&subquery.png)
 
 ### 参考资料💾
 #### <a href="https://blog.csdn.net/wuseyukui/article/details/71512793">MySQL高级 之 explain执行计划详解</a>
